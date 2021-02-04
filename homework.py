@@ -18,10 +18,8 @@ class Calculator:
     def get_week_stats(self):
         today = dt.datetime.now().date()
         date_week_ago = today - dt.timedelta(days=7)
-        # (sum(rec.amount for rec in self.records if date_week_ago
-        #      < rec.date <= today))
-        return sum(rec.amount for rec in self.records if date_week_ago
-                   < rec.date <= today)
+        return sum(rec.amount for rec in self.records
+                   if date_week_ago < rec.date <= today)
 
 
 class Record:
