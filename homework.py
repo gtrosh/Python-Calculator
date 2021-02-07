@@ -3,7 +3,17 @@ import datetime as dt
 DATE_FORMAT = '%d.%m.%Y'
 
 
-class Calculator:
+class Record():
+    def __init__(self, amount, comment, date=None):
+        self.amount = amount
+        self.comment = comment
+        if date is None:
+            self.date = dt.date.today()
+        else:
+            self.date = dt.datetime.strptime(date, DATE_FORMAT).date()
+
+
+class Calculator():
     def __init__(self, limit):
         self.limit = limit
         self.records = []
@@ -12,94 +22,90 @@ class Calculator:
         self.records.append(record)
 
     def get_today_stats(self):
-        today = dt.datetime.now().date()
-        return sum(rec.amount for rec in self.records if rec.date == today)
+        today = dt.date.today()
+        return sum(record.amount for record in self.records
+                   if record.date == today)
+
+    def today_balance(self):
+        return self.limit - self.get_today_stats()
 
     def get_week_stats(self):
-        today = dt.datetime.now().date()
+        today = dt.date.today()
         date_week_ago = today - dt.timedelta(days=7)
-        return sum(rec.amount for rec in self.records
-                   if date_week_ago < rec.date <= today)
-
-
-class Record:
-    def __init__(self, amount, comment, date=None):
-        self.amount = amount
-        self.comment = comment
-        if date is None:
-            self.date = dt.date.today()
-        else:
-            self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
+        return sum(record.amount for record in self.records
+                   if date_week_ago < record.date <= today)
 
 
 class CashCalculator(Calculator):
-    USD_RATE = 76.0
+    USD_RATE = 78.0
     EURO_RATE = 92.0
-    RUB_RATE = 1.0
 
     def get_today_cash_remained(self, currency):
-        cur_rate_dict = {
-            'cur_dict': {
-                'rub': 'руб',
-                'usd': 'USD',
-                'eur': 'Euro'
+        currency_dict = {
+            'rub': {
+                'cur_name': 'руб',
+                'cur_rate': 1
             },
-            'rate_dict': {
-                'rub': self.RUB_RATE,
-                'usd': self.USD_RATE,
-                'eur': self.EURO_RATE
+            'usd': {
+                'cur_name': 'USD',
+                'cur_rate': self.USD_RATE
+            },
+            'eur': {
+                'cur_name': 'Euro',
+                'cur_rate': self.EURO_RATE
             }
         }
-        spent_today = self.get_today_stats()
-        currency_left = round((self.limit - spent_today) / cur_rate_dict[
-            'rate_dict'][currency], 2)
-        if currency_left > 0:
-            return (f"На сегодня осталось {currency_left} "
-                    f"{cur_rate_dict['cur_dict'][currency]}")
-        elif currency_left == 0:
-            return "Денег нет, держись"
+        today_remainder = round(self.today_balance() /
+                                currency_dict[currency]['cur_rate'], 2)
+        if self.today_balance() > 0:
+            return (f"На сегодня осталось {today_remainder} "
+                    f"{currency_dict[currency]['cur_name']}")
+        elif self.today_balance() == 0:
+            return 'Денег нет, держись'
         else:
-            return (f"Денег нет, держись: твой долг - "
-                    f"{abs(currency_left)} "
-                    f"{cur_rate_dict['cur_dict'][currency]}")
+            return (f"Денег нет, держись: твой долг - {abs(today_remainder)} "
+                    f"{currency_dict[currency]['cur_name']}")
 
 
 class CaloriesCalculator(Calculator):
+
     def get_calories_remained(self):
-        consumed_today = self.get_today_stats()
-        currency_remained = self.limit - consumed_today
-        if currency_remained > 0:
-            return (f"Сегодня можно съесть что-нибудь ещё, но с общей "
-                    f"калорийностью не более {currency_remained} кКал")
+        if self.today_balance() > 0:
+            return ("Сегодня можно съесть что-нибудь ещё, но с общей "
+                    f"калорийностью не более {self.today_balance()} кКал")
         else:
-            return "Хватит есть!"
+            return 'Хватит есть!'
 
 
 if __name__ == '__main__':
-    c1 = Calculator(1000)
-    c2 = CashCalculator(5000)
-    c3 = CaloriesCalculator(2800)
-    r1 = Record(amount=120, comment="бла-бла")
-    r2 = Record(amount=50, comment="тратим")
-    r3 = Record(amount=700, comment="тратим", date="27.01.2021")
-    r4 = Record(amount=2500,
-                comment='Кусок тортика. И ещё один.')
+    # для CashCalculator
+    r1 = Record(amount=145, comment='Безудержный шопинг')
+    r2 = Record(amount=1568,
+                comment='Наполнение потребительской корзины',
+                date='09.03.2019')
+    r3 = Record(amount=691, comment='Катание на такси', date='08.03.2019')
+
+    # для CaloriesCalculator
+    r4 = Record(amount=1186,
+                comment='Кусок тортика. И ещё один.',
+                date='24.02.2019')
     r5 = Record(amount=84, comment='Йогурт.', date='23.02.2019')
-    r6 = Record(amount=1140, comment='Баночка чипсов.', date='24.02.2019')
+    r6 = Record(amount=2500, comment='Баночка чипсов.')
 
-    c1.add_record(r1)
-    c1.add_record(r2)
-    c1.add_record(r3)
+    cash_calc = CashCalculator(1000)
 
-    c2.add_record(r1)
-    c2.add_record(r2)
-    c2.add_record(r3)
+    cash_calc.add_record(r1)
+    cash_calc.add_record(r2)
+    cash_calc.add_record(r3)
 
-    c1.get_today_stats()
-    c1.get_week_stats()
-    c3.add_record(r4)
-    c3.add_record(r5)
-    c3.add_record(r6)
+    print(cash_calc.get_today_cash_remained('rub'))
+    print(cash_calc.get_today_cash_remained('usd'))
+    print(cash_calc.get_today_cash_remained('eur'))
+    print(cash_calc.get_week_stats())
 
-    print(c2.get_today_cash_remained('eur'))
-    print(c3.get_calories_remained())
+    calory_calc = CaloriesCalculator(2500)
+    calory_calc.add_record(r4)
+    calory_calc.add_record(r5)
+    calory_calc.add_record(r6)
+
+    print(calory_calc.get_calories_remained())
