@@ -1,1 +1,1 @@
-Study projects: Python application - calculator for money and calories. Uses OOP principles.
+Study project: Python application - calculator for money and calories. Uses OOP principles.
